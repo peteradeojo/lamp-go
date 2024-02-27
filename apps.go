@@ -17,7 +17,6 @@ func (apiCfg *ApiConfig) getApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(apps)
 	handlers.Respond(w, 200, apps)
 }
 

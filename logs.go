@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/peteradeojo/lamp-logger/handlers"
@@ -25,7 +24,6 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		handlers.RespondWithError(w, 400, "Bad request")
 		return
 	}
-	log.Println(params)
 
 	appId := r.Header.Get("APP_ID")
 	if appId == "" {
