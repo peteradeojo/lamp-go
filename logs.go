@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -11,9 +10,9 @@ import (
 
 func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Appid int64
-		Text  string
-		Level string
+		Text    string      `json:"text"`
+		Level   string      `json:"level"`
+		Context interface{} `json:"context"`
 	}
 
 	params := &parameters{}
@@ -31,20 +30,17 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := apiCfg.DB.GetAppWithToken(r.Context(), sql.NullString{
-		String: appId,
-		Valid:  true,
-	})
-
+	context, err := json.Marshal(params.Context)
 	if err != nil {
-		handlers.RespondWithError(w, 400, "Invalid app token")
+		handlers.RespondWithError(w, 400, err.Error())
 		return
 	}
 
 	_, err = apiCfg.DB.SaveLogs(r.Context(), database.SaveLogsParams{
-		Appid: app.ID,
-		Text:  params.Text,
-		Level: params.Level,
+		Apptoken: appId,
+		Text:     params.Text,
+		Level:    params.Level,
+		Context:  context,
 	})
 	if err != nil {
 		handlers.RespondWithError(w, 500, err.Error())

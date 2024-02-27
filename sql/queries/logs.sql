@@ -1,5 +1,5 @@
 -- name: SaveLogs :execresult
-INSERT INTO logs (appId, text, createdAt, updatedAt, level, saved) VALUES (?, ?, NOW(), NOW(), ?, 0);
+INSERT INTO logs (appToken, text, createdAt, updatedAt, level, saved, context) VALUES (?, ?, NOW(), NOW(), ?, 0, ?);
 
 -- name: GetAppWithToken :one
 SELECT * FROM apps WHERE token = ?;

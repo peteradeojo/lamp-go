@@ -6,6 +6,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 )
 
 type App struct {
@@ -17,8 +18,9 @@ type App struct {
 type Log struct {
 	ID        int64
 	Text      string
-	Appid     int64
+	Apptoken  string
 	Level     string
 	Createdat sql.NullTime
 	Updatedat sql.NullTime
+	Context   json.RawMessage
 }

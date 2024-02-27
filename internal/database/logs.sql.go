@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 )
 
 const getAppWithToken = `-- name: GetAppWithToken :one
@@ -22,15 +23,21 @@ func (q *Queries) GetAppWithToken(ctx context.Context, token sql.NullString) (Ap
 }
 
 const saveLogs = `-- name: SaveLogs :execresult
-INSERT INTO logs (appId, text, createdAt, updatedAt, level, saved) VALUES (?, ?, NOW(), NOW(), ?, 0)
+INSERT INTO logs (appToken, text, createdAt, updatedAt, level, saved, context) VALUES (?, ?, NOW(), NOW(), ?, 0, ?)
 `
 
 type SaveLogsParams struct {
-	Appid int64
-	Text  string
-	Level string
+	Apptoken string
+	Text     string
+	Level    string
+	Context  json.RawMessage
 }
 
 func (q *Queries) SaveLogs(ctx context.Context, arg SaveLogsParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, saveLogs, arg.Appid, arg.Text, arg.Level)
+	return q.db.ExecContext(ctx, saveLogs,
+		arg.Apptoken,
+		arg.Text,
+		arg.Level,
+		arg.Context,
+	)
 }
