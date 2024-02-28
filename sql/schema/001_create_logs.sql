@@ -5,7 +5,9 @@ CREATE TABLE logs (
   level VARCHAR(16) NOT NULL DEFAULT 'error',
   createdAt TIMESTAMP DEFAULT(NOW()),
   updatedAt TIMESTAMP DEFAULT(NOW()),
-  context JSON
+  context JSON,
+  ip TEXT,
+  tags JSON
 );
 
 CREATE TABLE apps (

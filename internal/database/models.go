@@ -23,4 +23,6 @@ type Log struct {
 	Createdat sql.NullTime
 	Updatedat sql.NullTime
 	Context   json.RawMessage
+	Ip        sql.NullString
+	Tags      json.RawMessage
 }
