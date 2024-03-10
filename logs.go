@@ -8,6 +8,7 @@ import (
 
 	"github.com/peteradeojo/lamp-logger/handlers"
 	"github.com/peteradeojo/lamp-logger/internal/database"
+	"github.com/sqlc-dev/pqtype"
 )
 
 func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
@@ -60,9 +61,10 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		Apptoken: appId,
 		Text:     params.Text,
 		Level:    params.Level,
-		Context:  context,
+		Context:  pqtype.NullRawMessage{RawMessage: context, Valid: true},
 		Ip:       ipAddress,
-		Tags:     tags,
+		// Tags:     tags,
+		Tags: pqtype.NullRawMessage{RawMessage: tags, Valid: true},
 	})
 	if err != nil {
 		handlers.RespondWithError(w, 500, err.Error())
