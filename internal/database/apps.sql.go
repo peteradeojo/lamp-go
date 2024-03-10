@@ -10,7 +10,7 @@ import (
 )
 
 const getApps = `-- name: GetApps :many
-SELECT id, token, userid FROM apps LIMIT ?
+SELECT id, token, userid FROM apps LIMIT $1
 `
 
 func (q *Queries) GetApps(ctx context.Context, limit int32) ([]App, error) {

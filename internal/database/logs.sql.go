@@ -8,11 +8,12 @@ package database
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 const getAppWithToken = `-- name: GetAppWithToken :one
-SELECT id, token, userid FROM apps WHERE token = ?
+SELECT id, token, userid FROM apps WHERE token = $1
 `
 
 func (q *Queries) GetAppWithToken(ctx context.Context, token sql.NullString) (App, error) {
@@ -23,7 +24,7 @@ func (q *Queries) GetAppWithToken(ctx context.Context, token sql.NullString) (Ap
 }
 
 const getLogs = `-- name: GetLogs :many
-SELECT id, text, apptoken, level, createdat, updatedat, context, ip, tags FROM logs WHERE appToken = ?
+SELECT id, text, apptoken, level, createdat, updatedat, context, ip, tags FROM logs WHERE appToken = $1
 `
 
 func (q *Queries) GetLogs(ctx context.Context, apptoken string) ([]Log, error) {
@@ -59,21 +60,21 @@ func (q *Queries) GetLogs(ctx context.Context, apptoken string) ([]Log, error) {
 	return items, nil
 }
 
-const saveLogs = `-- name: SaveLogs :execresult
-INSERT INTO logs (appToken, text, createdAt, updatedAt, level, saved, context,ip, tags) VALUES (?, ?, NOW(), NOW(), ?, 0, ?, ?, ?)
+const saveLogs = `-- name: SaveLogs :one
+INSERT INTO logs (appToken, text, createdAt, updatedAt, level, saved, context,ip, tags) VALUES ($1, $2, now(), now(), $3, 0, $4, $5, $6) RETURNING 1
 `
 
 type SaveLogsParams struct {
 	Apptoken string
 	Text     string
 	Level    string
-	Context  json.RawMessage
+	Context  pqtype.NullRawMessage
 	Ip       sql.NullString
-	Tags     json.RawMessage
+	Tags     pqtype.NullRawMessage
 }
 
-func (q *Queries) SaveLogs(ctx context.Context, arg SaveLogsParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, saveLogs,
+func (q *Queries) SaveLogs(ctx context.Context, arg SaveLogsParams) (int32, error) {
+	row := q.db.QueryRowContext(ctx, saveLogs,
 		arg.Apptoken,
 		arg.Text,
 		arg.Level,
@@ -81,4 +82,7 @@ func (q *Queries) SaveLogs(ctx context.Context, arg SaveLogsParams) (sql.Result,
 		arg.Ip,
 		arg.Tags,
 	)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
 }

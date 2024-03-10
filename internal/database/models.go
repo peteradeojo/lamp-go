@@ -6,7 +6,8 @@ package database
 
 import (
 	"database/sql"
-	"encoding/json"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 type App struct {
@@ -22,7 +23,7 @@ type Log struct {
 	Level     string
 	Createdat sql.NullTime
 	Updatedat sql.NullTime
-	Context   json.RawMessage
+	Context   pqtype.NullRawMessage
 	Ip        sql.NullString
-	Tags      json.RawMessage
+	Tags      pqtype.NullRawMessage
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/cors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
 )
 
@@ -30,7 +31,7 @@ func main() {
 		log.Fatal("No DB_URL")
 	}
 
-	dbCxn, err := sql.Open("mysql", dbUrl)
+	dbCxn, err := sql.Open(os.Getenv("DB_TYPE"), dbUrl)
 	if err != nil {
 		log.Fatal("Unable to open database connection: ", err)
 	}

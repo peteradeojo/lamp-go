@@ -1,2 +1,2 @@
 -- name: GetApps :many
-SELECT * FROM apps LIMIT ?;
+SELECT * FROM apps LIMIT $1;
