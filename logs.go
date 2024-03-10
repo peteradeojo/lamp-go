@@ -74,7 +74,7 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 	handlers.Respond(w, 200, struct {
 		Message string `json:"message"`
 	}{
-		Message: "log saved successfully",
+		Message: "Log saved successfully",
 	})
 }
 

@@ -61,7 +61,7 @@ func (q *Queries) GetLogs(ctx context.Context, apptoken string) ([]Log, error) {
 }
 
 const saveLogs = `-- name: SaveLogs :one
-INSERT INTO logs (appToken, text, createdAt, updatedAt, level, saved, context,ip, tags) VALUES ($1, $2, now(), now(), $3, 0, $4, $5, $6) RETURNING 1
+INSERT INTO logs (appToken, text, createdAt, updatedAt, level, context,ip, tags) VALUES ($1, $2, now(), now(), $3, $4, $5, $6) RETURNING 1
 `
 
 type SaveLogsParams struct {

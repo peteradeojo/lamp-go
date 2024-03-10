@@ -1,3 +1,6 @@
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
 # github.com/go-chi/chi/v5 v5.0.12
 ## explicit; go 1.14
 github.com/go-chi/chi/v5
@@ -18,3 +21,7 @@ github.com/lib/pq/scram
 # github.com/sqlc-dev/pqtype v0.3.0
 ## explicit; go 1.13
 github.com/sqlc-dev/pqtype
+# github.com/steinfletcher/apitest v1.5.15
+## explicit; go 1.18
+github.com/steinfletcher/apitest
+github.com/steinfletcher/apitest/difflib

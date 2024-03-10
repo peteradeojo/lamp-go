@@ -9,7 +9,9 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/sqlc-dev/pqtype v0.3.0 // indirect
+	github.com/steinfletcher/apitest v1.5.15 // indirect
 )
