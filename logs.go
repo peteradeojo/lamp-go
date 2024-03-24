@@ -68,7 +68,7 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		AppToken:  appId,
 		Tags:      string(tags),
 		Context:   string(context),
-		CreatedAt: time.Now().Format("yyyy-MM-dd HH:mm:ss"),
+		CreatedAt: time.Now().Format(time.DateTime),
 		Level:     params.Level,
 		Text:      params.Text,
 	})
