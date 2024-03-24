@@ -12,6 +12,37 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const createSystemLog = `-- name: CreateSystemLog :exec
+INSERT INTO system_logs (id, text, stack, context, level, from_system, createdat, updatedat, origin) VALUES (
+  uuid_generate_v4(), 
+  $1, 
+  $2, 
+  $3, 
+  $4, 
+  B'1', 
+  now(), 
+  now(), 
+  'go-api'
+)
+`
+
+type CreateSystemLogParams struct {
+	Text    string
+	Stack   sql.NullString
+	Context pqtype.NullRawMessage
+	Level   LogLevel
+}
+
+func (q *Queries) CreateSystemLog(ctx context.Context, arg CreateSystemLogParams) error {
+	_, err := q.db.ExecContext(ctx, createSystemLog,
+		arg.Text,
+		arg.Stack,
+		arg.Context,
+		arg.Level,
+	)
+	return err
+}
+
 const getAppWithToken = `-- name: GetAppWithToken :one
 SELECT id, token, userid FROM apps WHERE token = $1
 `
@@ -61,7 +92,7 @@ func (q *Queries) GetLogs(ctx context.Context, apptoken string) ([]Log, error) {
 }
 
 const saveLogs = `-- name: SaveLogs :one
-INSERT INTO logs (appToken, text, createdAt, updatedAt, level, context,ip, tags) VALUES ($1, $2, now(), now(), $3, $4, $5, $6) RETURNING 1
+INSERT INTO logs (apptoken, text, createdat, updatedat, level, context,ip, tags) VALUES ($1, $2, now(), now(), $3, $4, $5, $6) RETURNING 1
 `
 
 type SaveLogsParams struct {

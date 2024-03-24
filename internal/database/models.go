@@ -6,9 +6,57 @@ package database
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
 )
+
+type LogLevel string
+
+const (
+	LogLevelInfo     LogLevel = "info"
+	LogLevelError    LogLevel = "error"
+	LogLevelCritical LogLevel = "critical"
+	LogLevelDebug    LogLevel = "debug"
+)
+
+func (e *LogLevel) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LogLevel(s)
+	case string:
+		*e = LogLevel(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LogLevel: %T", src)
+	}
+	return nil
+}
+
+type NullLogLevel struct {
+	LogLevel LogLevel
+	Valid    bool // Valid is true if LogLevel is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLogLevel) Scan(value interface{}) error {
+	if value == nil {
+		ns.LogLevel, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LogLevel.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLogLevel) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LogLevel), nil
+}
 
 type App struct {
 	ID     int64
@@ -26,4 +74,15 @@ type Log struct {
 	Context   pqtype.NullRawMessage
 	Ip        sql.NullString
 	Tags      pqtype.NullRawMessage
+}
+
+type SystemLog struct {
+	ID         uuid.UUID
+	Text       string
+	Stack      sql.NullString
+	Context    pqtype.NullRawMessage
+	Origin     string
+	Level      LogLevel
+	FromSystem interface{}
+	Createdat  time.Time
 }

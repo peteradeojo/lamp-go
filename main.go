@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -15,7 +17,8 @@ import (
 )
 
 type ApiConfig struct {
-	DB *database.Queries
+	DB          *database.Queries
+	redisClient *redis.Client
 }
 
 func main() {
@@ -38,8 +41,25 @@ func main() {
 
 	defer dbCxn.Close()
 
+	redisDB, err := strconv.Atoi(os.Getenv("REDIS_DB"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDRESS"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       redisDB,
+	})
+
+	if redisClient == nil {
+		log.Fatal("Unable to create redis client")
+	}
+
 	apiCfg := ApiConfig{
-		DB: database.New(dbCxn),
+		DB:          database.New(dbCxn),
+		redisClient: redisClient,
 	}
 
 	router := chi.NewRouter()
