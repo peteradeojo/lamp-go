@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
 
@@ -28,6 +29,11 @@ func TestMain(t *testing.T) {
 	}
 
 	apiCfg.DB = database.New(cxn)
+	apiCfg.redisClient = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDRESS"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	})
+
 	apptoken := "6f7b8451-0724-492d-af75-a8da0e2b108f"
 
 	test := apitest.New()

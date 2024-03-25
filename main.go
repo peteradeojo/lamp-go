@@ -22,6 +22,11 @@ type ApiConfig struct {
 }
 
 func main() {
+	apiCfg := ApiConfig{
+		// DB:          database.New(dbCxn),
+		// redisClient: redisClient,
+	}
+
 	godotenv.Load()
 
 	portString := os.Getenv("PORT")
@@ -38,6 +43,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to open database connection: ", err)
 	}
+
+	apiCfg.DB = database.New(dbCxn)
 
 	defer dbCxn.Close()
 
@@ -57,10 +64,7 @@ func main() {
 		log.Fatal("Unable to create redis client")
 	}
 
-	apiCfg := ApiConfig{
-		DB:          database.New(dbCxn),
-		redisClient: redisClient,
-	}
+	apiCfg.redisClient = redisClient
 
 	router := chi.NewRouter()
 

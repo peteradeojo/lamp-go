@@ -97,7 +97,7 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 				String: "Unavailable",
 			},
 		})
-		handlers.RespondWithError(w, 500, err.Error())
+		handlers.RespondWithError(w, 500, i.Err().Error())
 		return
 	}
 
