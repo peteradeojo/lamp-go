@@ -15,6 +15,7 @@ import (
 )
 
 type ModelResponse struct {
+	Error     string `json:"error"`
 	Model     string `json:"model"`
 	CreatedAt string `json:"created_at"`
 	Done      bool   `json:"done"`
@@ -35,6 +36,19 @@ type ChatMessage struct {
 	Content string `json:"content"`
 }
 
+var replacer strings.Replacer = *strings.NewReplacer(
+	"\\n", "",
+	`:`, "",
+)
+
+var escaper strings.Replacer = *strings.NewReplacer(
+	`"`, `\"`,
+)
+
+func CleanMessage(txt string) string {
+	return escaper.Replace(replacer.Replace(txt))
+}
+
 func (apiCfg *ApiConfig) RunAIAnalysis(w http.ResponseWriter, r *http.Request) {
 	logId, err := strconv.Atoi(chi.URLParam(r, "logId"))
 	if err != nil {
@@ -50,11 +64,11 @@ func (apiCfg *ApiConfig) RunAIAnalysis(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := fmt.Sprintf("**Message**: %s\n**Context**: %s", log.Text, log.Context.RawMessage)
+	content := fmt.Sprintf("%s\\n%s", CleanMessage(log.Text), escaper.Replace(string(log.Context.RawMessage[:50])))
 
-	var reader = strings.NewReader(fmt.Sprintf(`{"messages": [{"role": "system", "content": "You are to act as an analyser for log messages. You will be provided with a generated log message from a running application. The message might contain context provided as a JSON string. You will attempt to determine the programming language from the log message and provided context and attempt to provide a description about the issue to be diagnosed and provide pointers on how best to resolve the issue."}, {"role": "user", "content": "%v"}], "stream": false, "model": "llama3"}`, content))
+	var reader = strings.NewReader(fmt.Sprintf(`{"messages": [{"role": "system", "content": "You are to act as an analyser for log messages. You will be provided with a generated log message from a running application. The message might contain context provided as a JSON string truncated to it's first 50 characters. You will attempt to determine the programming language from the log message and provided context and attempt to provide a description about the issue to be diagnosed and provide pointers on how best to resolve the issue."}, {"role": "user", "content": "%v"}], "stream": false, "model": "llama3"}`, content))
 
-	resp, err := http.Post("http://127.0.0.1:11434/api/chat", "application/json", reader)
+	resp, err := http.Post("http://localhost:11434/api/chat", "text/json", reader)
 
 	if err != nil {
 		llog.Println(err)
@@ -65,6 +79,7 @@ func (apiCfg *ApiConfig) RunAIAnalysis(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	i, err := io.ReadAll(resp.Body)
+	fmt.Println(string(i))
 	if err != nil {
 		handlers.SaveError(apiCfg.DB, r, err)
 		llog.Println(err)

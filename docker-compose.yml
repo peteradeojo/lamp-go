@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    environment:
+      - PORT=4000
+    ports:
+      - "4000:4000"
+  ai:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    expose:
+      - "11434"
+    volumes:
+      - ollama_volume:/root/.ollama
+
+volumes:
+  ollama_volume:
