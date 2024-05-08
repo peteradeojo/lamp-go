@@ -19,3 +19,6 @@ INSERT INTO system_logs (id, text, stack, context, level, from_system, createdat
   now(), 
   'go-api'
 );
+
+-- name: GetLog :one
+SELECT * FROM logs WHERE id = $1;

@@ -81,8 +81,9 @@ func main() {
 
 	v1Router := chi.NewRouter()
 	v1Router.Post("/logs", apiCfg.saveLog)
-	v1Router.Get("/apps", apiCfg.getApps)
-	v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
+	// v1Router.Get("/apps", apiCfg.getApps)
+	// v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
+	v1Router.Post("/logs/analyse/{logId}", apiCfg.RunAIAnalysis)
 
 	router.Mount("/v1", v1Router)
 

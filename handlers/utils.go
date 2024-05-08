@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/peteradeojo/lamp-logger/internal/database"
 )
 
 func Respond(w http.ResponseWriter, code int, payload interface{}) {
@@ -35,4 +38,17 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 		Message: msg,
 	}
 	Respond(w, code, message)
+}
+
+func SaveError(db *database.Queries, r *http.Request, err error) {
+	if err != nil {
+		db.CreateSystemLog(r.Context(), database.CreateSystemLogParams{
+			Text:  err.Error(),
+			Level: database.LogLevelError,
+			Stack: sql.NullString{
+				Valid:  true,
+				String: "Unavailable",
+			},
+		})
+	}
 }

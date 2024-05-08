@@ -54,6 +54,27 @@ func (q *Queries) GetAppWithToken(ctx context.Context, token sql.NullString) (Ap
 	return i, err
 }
 
+const getLog = `-- name: GetLog :one
+SELECT id, text, apptoken, level, createdat, updatedat, context, ip, tags FROM logs WHERE id = $1
+`
+
+func (q *Queries) GetLog(ctx context.Context, id int64) (Log, error) {
+	row := q.db.QueryRowContext(ctx, getLog, id)
+	var i Log
+	err := row.Scan(
+		&i.ID,
+		&i.Text,
+		&i.Apptoken,
+		&i.Level,
+		&i.Createdat,
+		&i.Updatedat,
+		&i.Context,
+		&i.Ip,
+		&i.Tags,
+	)
+	return i, err
+}
+
 const getLogs = `-- name: GetLogs :many
 SELECT id, text, apptoken, level, createdat, updatedat, context, ip, tags FROM logs WHERE appToken = $1
 `

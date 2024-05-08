@@ -58,6 +58,13 @@ func (ns NullLogLevel) Value() (driver.Value, error) {
 	return string(ns.LogLevel), nil
 }
 
+type Account struct {
+	ID     int64
+	Userid int64
+	Status int32
+	Tierid int32
+}
+
 type App struct {
 	ID     int64
 	Token  sql.NullString
@@ -85,4 +92,18 @@ type SystemLog struct {
 	Level      LogLevel
 	FromSystem interface{}
 	Createdat  time.Time
+}
+
+type Tier struct {
+	ID                 int64
+	Name               string
+	Limits             string
+	Generallyavailable sql.NullInt16
+}
+
+type User struct {
+	ID       int64
+	Email    string
+	Githubid sql.NullString
+	Isadmin  sql.NullInt16
 }
