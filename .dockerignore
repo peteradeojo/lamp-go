@@ -1,0 +1,5 @@
+vendor
+tmp
+docker-compose.yml
+.env
+.env.test
