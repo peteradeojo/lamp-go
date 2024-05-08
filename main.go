@@ -83,6 +83,7 @@ func main() {
 	v1Router.Post("/logs", apiCfg.saveLog)
 	// v1Router.Get("/apps", apiCfg.getApps)
 	// v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
+	v1Router.Post("/pull-model", apiCfg.PullModel)
 	v1Router.Post("/logs/analyse/{logId}", apiCfg.RunAIAnalysis)
 
 	router.Mount("/v1", v1Router)

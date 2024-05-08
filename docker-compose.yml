@@ -2,7 +2,8 @@ version: "3"
 
 services:
   app:
-    build: .
+    build:
+      dockerfile: Composefile
     environment:
       - PORT=4000
     ports:

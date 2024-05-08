@@ -103,3 +103,16 @@ func (apiCfg *ApiConfig) RunAIAnalysis(w http.ResponseWriter, r *http.Request) {
 
 	handlers.Respond(w, 200, data)
 }
+
+func (apiCfg *ApiConfig) PullModel(w http.ResponseWriter, r *http.Request) {
+	OLLAMA_HOST := os.Getenv("OLLAMA_HOST")
+	_, err := http.Post(fmt.Sprintf("%s/api/pull", OLLAMA_HOST), "text/json", strings.NewReader(`{"model": "llama3", "stream": false}`))
+
+	if err != nil {
+		handlers.SaveError(apiCfg.DB, r, err)
+		handlers.RespondWithError(w, 500, "unable to pull model")
+		return
+	}
+
+	handlers.Respond(w, 201, "Pulling model")
+}
