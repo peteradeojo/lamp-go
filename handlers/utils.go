@@ -36,3 +36,7 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 	}
 	Respond(w, code, message)
 }
+
+type ApiResponse struct {
+	Message string `json:"message"`
+}

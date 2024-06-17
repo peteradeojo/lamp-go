@@ -1,15 +1,35 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/peteradeojo/lamp-logger/handlers"
 	"github.com/peteradeojo/lamp-logger/internal/database"
+	"github.com/sqlc-dev/pqtype"
 )
+
+type Log struct {
+	ID        int                   `json:"id"`
+	Text      string                `json:"text"`
+	Apptoken  string                `json:"apptoken"`
+	Level     string                `json:"level"`
+	Createdat sql.NullTime          `json:"createdat"`
+	Context   pqtype.NullRawMessage `json:"context"`
+	Ip        sql.NullString        `json:"ip"`
+	Tags      pqtype.NullRawMessage `json:"tags"`
+}
+
+type ExportJob struct {
+	Status   string `json:"status"`
+	Path     string `json:"path"`
+	AppToken string `json:"token"`
+}
 
 func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
@@ -106,4 +126,24 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 	}{
 		Message: "Log saved successfully",
 	})
+}
+
+func (apiCfg *ApiConfig) exportLogs(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		App string `json:"app"`
+	}
+
+	params := &parameters{}
+
+	err := json.NewDecoder(r.Body).Decode(params)
+	if err != nil {
+		handlers.RespondWithError(w, 500, err.Error())
+		return
+	}
+
+	date := time.Now().Format("2006-01-02")
+
+	go apiCfg.generateLogExport(context.Background(), params.App, fmt.Sprintf("exports/%s/%s/Book1.xlsx", date, params.App))
+
+	handlers.Respond(w, 200, handlers.ApiResponse{Message: "Exporting generated file."})
 }

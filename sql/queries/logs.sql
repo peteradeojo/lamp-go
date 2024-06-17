@@ -19,3 +19,6 @@ INSERT INTO system_logs (id, text, stack, context, level, from_system, createdat
   now(), 
   'go-api'
 );
+
+-- name: ExportLogs :many
+SELECT * FROM logs WHERE apptoken = $1 ORDER BY createdat DESC LIMIT 100;

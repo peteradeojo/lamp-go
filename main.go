@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type ApiConfig struct {
@@ -21,8 +24,10 @@ type ApiConfig struct {
 	redisClient *redis.Client
 }
 
+var apiCfg *ApiConfig
+
 func main() {
-	apiCfg := ApiConfig{
+	apiCfg = &ApiConfig{
 		// DB:          database.New(dbCxn),
 		// redisClient: redisClient,
 	}
@@ -81,6 +86,7 @@ func main() {
 
 	v1Router := chi.NewRouter()
 	v1Router.Post("/logs", apiCfg.saveLog)
+	v1Router.Post("/export", apiCfg.exportLogs)
 	v1Router.Get("/apps", apiCfg.getApps)
 	v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
 
@@ -96,4 +102,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func reportError(cx context.Context, err error, context pqtype.NullRawMessage) {
+	apiCfg.DB.CreateSystemLog(cx, database.CreateSystemLogParams{
+		Text:    fmt.Sprintf("Unable to register job: %v", err),
+		Level:   "error",
+		Context: context,
+	})
 }
