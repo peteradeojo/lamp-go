@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -17,11 +19,13 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
 	"github.com/sqlc-dev/pqtype"
+	"github.com/zishang520/socket.io/v2/socket"
 )
 
 type ApiConfig struct {
 	DB          *database.Queries
 	redisClient *redis.Client
+	ioClient    *socket.Server
 }
 
 var apiCfg *ApiConfig
@@ -70,8 +74,12 @@ func main() {
 	}
 
 	apiCfg.redisClient = redisClient
+	defer redisClient.Close()
 
+	// Websocket socketio setup
 	router := chi.NewRouter()
+
+	io := socket.NewServer(nil, nil)
 
 	router.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://*"}, // Use this to allow specific origin hosts
@@ -90,24 +98,65 @@ func main() {
 	v1Router.Get("/apps", apiCfg.getApps)
 	v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
 
+	apiCfg.BootstrapWs(io)
+
 	router.Mount("/v1", v1Router)
+	router.Mount("/socket.io", io.ServeHandler(nil))
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	srv := http.Server{
 		Addr:    ":" + portString,
 		Handler: router,
 	}
 
-	log.Printf("Server running on port %s", portString)
-	err = srv.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		log.Printf("Server running on port %s", portString)
+		err = srv.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	<-done
+	io.Close(nil)
+
+	log.Println("server stopped")
+
 }
 
 func reportError(cx context.Context, err error, context pqtype.NullRawMessage) {
 	apiCfg.DB.CreateSystemLog(cx, database.CreateSystemLogParams{
-		Text:    fmt.Sprintf("Unable to register job: %v", err),
+		Text:    err.Error(),
 		Level:   "error",
 		Context: context,
 	})
+}
+
+func (apiCfg *ApiConfig) sendSocketMessage(evt, to string, message any) error {
+	return apiCfg.ioClient.To(socket.Room(to)).Emit(evt, message)
+}
+
+func (api *ApiConfig) BootstrapWs(io *socket.Server) {
+	io.On("connection", func(clients ...any) {
+		client := clients[0].(*socket.Socket)
+		client.On("connect-log-stream", func(a ...any) {
+			token := a[0]
+			if room, ok := token.(string); ok {
+				client.Join(socket.Room(room))
+				fmt.Println("Joined room")
+			} else {
+				fmt.Println("Token is not of type string")
+			}
+		})
+
+		client.On("disconnect", func(a ...any) {
+			fmt.Println("disconnected")
+		})
+
+		log.Printf("connected: %s\n", client.Id())
+	})
+
+	api.ioClient = io
 }

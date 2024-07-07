@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -33,10 +32,11 @@ type ExportJob struct {
 
 func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Text    string      `json:"text"`
-		Level   string      `json:"level"`
-		Context interface{} `json:"context"`
-		Tags    interface{} `json:"tags"`
+		Text    string        `json:"text"`
+		Level   string        `json:"level"`
+		Context []interface{} `json:"context"`
+		Tags    []string      `json:"tags"`
+		Ip      string        `json:"ip"`
 	}
 
 	params := &parameters{}
@@ -54,43 +54,43 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	context, err := json.Marshal(params.Context)
-	if err != nil {
-		handlers.RespondWithError(w, 400, err.Error())
-		return
-	}
+	// context, err := json.Marshal(params.Context)
+	// if err != nil {
+	// 	handlers.RespondWithError(w, 400, err.Error())
+	// 	return
+	// }
 
 	ip := r.RemoteAddr
-	ipAddress := sql.NullString{
-		String: ip,
-		Valid:  false,
-	}
-	if ip == "" {
-		ipAddress.String = ip
-		ipAddress.Valid = true
-	}
+	// ipAddress := sql.NullString{
+	// 	String: ip,
+	// 	Valid:  true,
+	// }
 
-	tags, err := json.Marshal(params.Tags)
-	if err != nil {
-		log.Println(err)
-		handlers.RespondWithError(w, 400, "Unable to parse tags")
-		return
-	}
+	params.Ip = ip
+
+	// tags, err := json.Marshal(params.Tags)
+	// if err != nil
+	// 	log.Println(err)
+	// 	handlers.RespondWithError(w, 400, "Unable to parse tags")
+	// 	return
+	// }
 
 	lLog, err := json.Marshal(struct {
-		AppToken  string `json:"apptoken"`
-		Tags      string `json:"tags"`
-		Context   string `json:"context"`
-		CreatedAt string `json:"createdat"`
-		Level     string `json:"level"`
-		Text      string `json:"text"`
+		AppToken  string        `json:"apptoken"`
+		Tags      []string      `json:"tags"`
+		Context   []interface{} `json:"context"`
+		CreatedAt string        `json:"createdat"`
+		Level     string        `json:"level"`
+		Text      string        `json:"text"`
+		Ip        string        `json:"ip"`
 	}{
 		AppToken:  appId,
-		Tags:      string(tags),
-		Context:   string(context),
+		Tags:      params.Tags,
+		Context:   params.Context,
 		CreatedAt: time.Now().Format(time.DateTime),
 		Level:     params.Level,
 		Text:      params.Text,
+		Ip:        params.Ip,
 	})
 
 	if err != nil {
@@ -119,6 +119,14 @@ func (apiCfg *ApiConfig) saveLog(w http.ResponseWriter, r *http.Request) {
 		})
 		handlers.RespondWithError(w, 500, i.Err().Error())
 		return
+	}
+
+	err = apiCfg.sendSocketMessage("log", appId, string(lLog))
+	if err != nil {
+		reportError(r.Context(), err, pqtype.NullRawMessage{
+			Valid:      false,
+			RawMessage: nil,
+		})
 	}
 
 	handlers.Respond(w, 200, struct {
