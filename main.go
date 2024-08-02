@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
@@ -138,6 +140,12 @@ func (apiCfg *ApiConfig) sendSocketMessage(evt, to string, message any) error {
 	return apiCfg.ioClient.To(socket.Room(to)).Emit(evt, message)
 }
 
+type TaskComment struct {
+	Message  string `json:"content"`
+	SenderID int16  `json:"sender_id"`
+	Task     string `json:"task"`
+}
+
 func (api *ApiConfig) BootstrapWs(io *socket.Server) {
 	io.On("connection", func(clients ...any) {
 		client := clients[0].(*socket.Socket)
@@ -145,7 +153,6 @@ func (api *ApiConfig) BootstrapWs(io *socket.Server) {
 			token := a[0]
 			if room, ok := token.(string); ok {
 				client.Join(socket.Room(room))
-				fmt.Println("Joined room")
 			} else {
 				fmt.Println("Token is not of type string")
 			}
@@ -155,8 +162,55 @@ func (api *ApiConfig) BootstrapWs(io *socket.Server) {
 			fmt.Println("disconnected")
 		})
 
-		log.Printf("connected: %s\n", client.Id())
+		client.On("connect-task-chat", func(a ...any) {
+			token := a[0]
+			if room, ok := token.(string); ok {
+				client.Join(socket.Room(room))
+				fmt.Printf("Joined room: %v\n", room)
+			} else {
+				fmt.Println("Token is not of type string")
+			}
+		})
+
+		client.On("task-chat", func(a ...any) {
+			data, err := (json.Marshal(a[0]))
+			if err != nil {
+				reportError(context.Background(), err, pqtype.NullRawMessage{})
+			}
+
+			var comment TaskComment
+			err = json.Unmarshal(data, &comment)
+			if err != nil {
+				reportError(context.Background(), err, pqtype.NullRawMessage{})
+				return
+			}
+
+			go SaveTaskComment(context.Background(), comment)
+
+			io.To(socket.Room(comment.Task)).Emit("task-chat", a[0])
+		})
 	})
 
 	api.ioClient = io
+}
+
+func SaveTaskComment(ctx context.Context, comment TaskComment) {
+	taskId, err := uuid.Parse(comment.Task)
+	if err != nil {
+		reportError(context.Background(), err, pqtype.NullRawMessage{Valid: false})
+		return
+	}
+
+	dbComment := database.AddCommentParams{
+		Message:  comment.Message,
+		SenderID: int32(comment.SenderID),
+		TaskID:   taskId,
+	}
+
+	err = apiCfg.DB.AddComment(ctx, dbComment)
+	if err != nil {
+		reportError(ctx, err, pqtype.NullRawMessage{
+			Valid: false,
+		})
+	}
 }

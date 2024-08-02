@@ -29,3 +29,12 @@ CREATE TABLE system_logs (
   createdat timestamp not null,
   primary key (id)
 );
+
+CREATE TABLE task_comments (
+  id uuid not null,
+  message text not null,
+  sender_id int not null,
+  task_id uuid not null,
+  createdat timestamp not null default now(),
+  primary key  (id)
+);

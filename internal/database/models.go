@@ -86,3 +86,11 @@ type SystemLog struct {
 	FromSystem interface{}
 	Createdat  time.Time
 }
+
+type TaskComment struct {
+	ID        uuid.UUID
+	Message   string
+	SenderID  int32
+	TaskID    uuid.UUID
+	Createdat time.Time
+}
