@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 )
@@ -35,6 +36,11 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 		Message: msg,
 	}
 	Respond(w, code, message)
+}
+
+func ParseJson(body io.ReadCloser, dest any) error {
+	decoder := json.NewDecoder(body)
+	return decoder.Decode(dest)
 }
 
 type ApiResponse struct {

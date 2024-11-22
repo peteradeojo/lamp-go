@@ -20,6 +20,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/peteradeojo/lamp-logger/internal/database"
+	"github.com/peteradeojo/lamp-logger/middleware"
 	"github.com/sqlc-dev/pqtype"
 	"github.com/zishang520/socket.io/v2/socket"
 )
@@ -30,7 +31,15 @@ type ApiConfig struct {
 	ioClient    *socket.Server
 }
 
+type SMTPConfig struct {
+	Host     string
+	Port     int64
+	Username string
+	Password string
+}
+
 var apiCfg *ApiConfig
+var smtpConfig *SMTPConfig
 
 func main() {
 	apiCfg = &ApiConfig{
@@ -58,6 +67,9 @@ func main() {
 	apiCfg.DB = database.New(dbCxn)
 
 	defer dbCxn.Close()
+
+	smtpConfig = &SMTPConfig{}
+	SetupMailConfig()
 
 	redisDB, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 
@@ -95,10 +107,19 @@ func main() {
 	}))
 
 	v1Router := chi.NewRouter()
+
+	v1Router.Use(middleware.Logging)
+
 	v1Router.Post("/logs", apiCfg.saveLog)
 	v1Router.Post("/export", apiCfg.exportLogs)
 	v1Router.Get("/apps", apiCfg.getApps)
-	v1Router.Get("/apps/{app}", apiCfg.getAppWithToken)
+	v1Router.Get("/apps/{app}", (apiCfg.getAppWithToken))
+
+	v1Router.Group(func(r chi.Router) {
+		r.Use(middleware.ValidateHmac)
+		r.Post("/notification", (apiCfg.SendNotification))
+		r.Post("/queue-notification", (apiCfg.QueueEmail))
+	})
 
 	apiCfg.BootstrapWs(io)
 
@@ -125,7 +146,6 @@ func main() {
 	io.Close(nil)
 
 	log.Println("server stopped")
-
 }
 
 func reportError(cx context.Context, err error, context pqtype.NullRawMessage) {
