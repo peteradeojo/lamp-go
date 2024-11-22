@@ -4,3 +4,4 @@ node_modules
 lamp-logger
 out
 vendor
+tmp

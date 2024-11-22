@@ -49,6 +49,8 @@ func generateHMAC(message, secret string) string {
 func ValidateHmac(next http.Handler) http.Handler {
 	key := os.Getenv("ADMIN_HOST_KEY")
 
+	prod := os.Getenv("GOENV") == "production"
+
 	if key == "" {
 		panic(errors.New("no secret key  connfigured in the application"))
 	}
@@ -56,40 +58,42 @@ func ValidateHmac(next http.Handler) http.Handler {
 	secretKey := []byte(key)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		signature := r.Header.Get("X-Signature")
+		if prod {
+			signature := r.Header.Get("X-Signature")
 
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "unable to read body", http.StatusInternalServerError)
-			return
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "unable to read body", http.StatusInternalServerError)
+				return
+			}
+
+			if signature == "" {
+				handlers.RespondWithError(w, 401, "no signature provided")
+				return
+			}
+
+			// Log or process the body (example: printing it)
+			// fmt.Printf("Request Body: %s\n", string(body))
+
+			hash := hmac.New(sha256.New, secretKey)
+			_, err = hash.Write(body)
+			if err != nil {
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+
+			expected := hex.EncodeToString(hash.Sum(nil))
+
+			check := hmac.Equal([]byte(signature), []byte(expected))
+
+			if !check {
+				handlers.RespondWithError(w, http.StatusForbidden, "Forbidden")
+				return
+			}
+
+			// Restore the body for the next handler.
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
-
-		if signature == "" {
-			handlers.RespondWithError(w, 401, "no signature provided")
-			return
-		}
-
-		// Log or process the body (example: printing it)
-		// fmt.Printf("Request Body: %s\n", string(body))
-
-		hash := hmac.New(sha256.New, secretKey)
-		_, err = hash.Write(body)
-		if err != nil {
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-
-		expected := hex.EncodeToString(hash.Sum(nil))
-
-		check := hmac.Equal([]byte(signature), []byte(expected))
-
-		if !check {
-			handlers.RespondWithError(w, http.StatusForbidden, "Forbidden")
-			return
-		}
-
-		// Restore the body for the next handler.
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		next.ServeHTTP(w, r)
 	})

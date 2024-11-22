@@ -29,6 +29,7 @@ type ApiConfig struct {
 	DB          *database.Queries
 	redisClient *redis.Client
 	ioClient    *socket.Server
+	AppEnv      string
 }
 
 type SMTPConfig struct {
@@ -45,9 +46,15 @@ func main() {
 	apiCfg = &ApiConfig{
 		// DB:          database.New(dbCxn),
 		// redisClient: redisClient,
+		AppEnv: "local",
 	}
 
 	godotenv.Load()
+	apiCfg.AppEnv = os.Getenv("GOENV")
+
+	if apiCfg.AppEnv == "" {
+		apiCfg.AppEnv = "production"
+	}
 
 	portString := os.Getenv("PORT")
 	if portString == "" {

@@ -45,7 +45,7 @@ func SendMail(message MailMesage) error {
 	}
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", smtpConfig.Username)
+	m.SetHeader("From", "Doppler <"+smtpConfig.Username+">")
 	m.SetHeader("Subject", message.Subject)
 	m.SetBody("text/plain", message.PlainText)
 	m.AddAlternative("text/html", renderedHTML)
